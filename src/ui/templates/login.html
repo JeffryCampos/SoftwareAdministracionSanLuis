@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Gestión de Estacionamiento</title>
+    <link rel="icon" href="car_parking_logo.ico" type="image/x-icon">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="common.css">
+    <link rel="stylesheet" href="login.css">
+    <script type="text/javascript" src="/eel.js"></script>
+
+    <style>
+        .btn-success {
+            background-image: none !important;
+            background-color: #28a745 !important;
+
+        }
+    </style>
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'light') {
+                document.documentElement.classList.add('light-mode');
+                document.documentElement.classList.remove('dark-mode');
+            } else {
+                document.documentElement.classList.add('dark-mode');
+                document.documentElement.classList.remove('light-mode');
+            }
+        })();
+    </script>
+
+    <script src="utils.js"></script>
+
+</head>
+
+<body oncontextmenu="return false;">
+
+    <header class="login-header space-x-6">
+        <div id="login-mode-switcher" class="cursor-pointer" title="Cambiar a modo Navegador">
+            <i class="fas fa-desktop text-3xl"></i>
+        </div>
+        <div id="login-theme-switcher" class="cursor-pointer" title="Cambiar Tema">
+            <i class="fas fa-sun text-3xl"></i>
+        </div>
+    </header>
+
+    <div class="login-card rounded-xl flex overflow-hidden max-w-4xl w-full">
+        <div class="w-1/2 p-12 flex flex-col justify-center">
+            <h1 class="text-6xl font-bold leading-tight mb-4">Bienvenido de Vuelta</h1>
+            <p class="text-lg text-secondary">Inicia sesión para continuar con la gestión de estacionamientos.</p>
+        </div>
+
+        <div class="w-1/2 p-10 flex flex-col items-center justify-center gap-6 bg-opacity-20 bg-black">
+            <div class="flex flex-col items-center gap-2 mb-4">
+                <img src="car_parking_logo.png" alt="Logo Sistema de Estacionamiento" class="w-28 h-28 object-contain">
+                <h2 class="text-2xl font-bold tracking-wider">TORRE SAN LUIS</h2>
+                <p class="text-sm font-semibold text-gray-400">Gestión de Estacionamiento v1.0</p>
+            </div>
+
+            <input type="text" id="username" placeholder="RUT (Ej: 12.345.678-K)" class="input-field w-full"
+                maxlength="12" oninput="formatRut(this)" required autocomplete="off">
+
+            <div class="relative w-full">
+                <input type="password" id="password" placeholder="Contraseña" class="input-field w-full pr-10" required
+                    autocomplete="new-password">
+
+                <button type="button" id="togglePassword"
+                    class="absolute inset-y-0 right-0 flex items-center pr-3 focus:outline-none"
+                    aria-label="Mostrar u ocultar contraseña">
+                    <img id="eyeIcon" src="eye_closed.png" alt="Ojo Cerrado"
+                        class="w-5 h-5 opacity-70 hover:opacity-100 transition duration-150">
+                </button>
+            </div>
+
+            <p id="errorMessage" class="text-red-400 text-sm hidden text-center font-medium -mt-2 -mb-2">RUT o
+                Contraseña incorrectos.</p>
+
+            <button onclick="performLogin()"
+                class="btn-login w-full flex items-center justify-center space-x-2 py-3 mt-2">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Iniciar Sesión</span>
+            </button>
+        </div>
+    </div>
+
+    <footer class="login-footer">
+        <div>
+            <p>Comunidad Estacionamiento Torre San Luis</p>
+            <p>Dirección: Cerro La Parva 991, Las Condes</p>
+            <p>Correo: estacsanluis@gmail.com | Teléfono: 22071926</p>
+            <p>&copy; All rights reserved 2015</p>
+        </div>
+    </footer>
+
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center hidden z-50">
+        <i class="fas fa-spinner fa-spin text-white text-6xl"></i>
+    </div>
+
+    <div id="fps-counter"
+        class="fixed bottom-2 right-3 bg-black bg-opacity-60 text-white text-xs font-mono px-2 py-1 rounded z-50">
+        FPS: --
+    </div>
+
+
+    <script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            const toggleButton = document.getElementById('togglePassword');
+
+            const closedEye = 'eye_closed.png';
+            const openEye = 'eye_open.png';
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.src = openEye;
+                eyeIcon.alt = 'Ojo Abierto';
+                toggleButton.setAttribute('aria-label', 'Ocultar contraseña');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.src = closedEye;
+                eyeIcon.alt = 'Ojo Cerrado';
+                toggleButton.setAttribute('aria-label', 'Mostrar contraseña');
+            }
+        }
+
+        async function performLogin() {
+            const rutInput = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const loginButton = document.querySelector('.btn-login');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const buttonIcon = loginButton.querySelector('i');
+
+            const rutLimpio = rutInput.replace(/[^0-9kK]/g, '');
+
+            errorMessage.classList.add('hidden');
+
+            if (!rutLimpio || !password) {
+                errorMessage.innerText = "Por favor, ingresa RUT y Contraseña.";
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            loginButton.disabled = true;
+            loadingOverlay.classList.remove('hidden');
+
+            try {
+                const isConnected = await eel.reconnect_db()();
+                if (!isConnected) {
+                    errorMessage.innerText = "❌ Error: No se pudo conectar a la base de datos. Intente más tarde.";
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+
+                const success = await eel.check_credentials(rutLimpio, password)();
+
+                if (success) {
+                    loginButton.classList.add('btn-success');
+                    buttonIcon.classList.remove('fa-sign-in-alt');
+                    buttonIcon.classList.add('fa-check');
+                    loginButton.querySelector('span').innerText = 'Éxito';
+
+                    setTimeout(() => {
+                        window.location.replace("index.html");
+                    }, 1000);
+                } else {
+                    errorMessage.innerText = "❌ RUT o Contraseña incorrectos.";
+                    errorMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorMessage.innerText = "❌ Ocurrió un error inesperado. Intente de nuevo.";
+                errorMessage.classList.remove('hidden');
+            } finally {
+                loadingOverlay.classList.add('hidden');
+                loginButton.disabled = false;
+            }
+        }
+
+        function setupThemeSwitcherLogin() {
+            const themeSwitcher = document.getElementById('login-theme-switcher');
+            if (!themeSwitcher) return;
+
+            function setTheme(theme) {
+                localStorage.setItem('theme', theme);
+                if (theme === 'light') {
+                    document.documentElement.classList.add('light-mode');
+                    document.documentElement.classList.remove('dark-mode');
+                } else {
+                    document.documentElement.classList.add('dark-mode');
+                    document.documentElement.classList.remove('light-mode');
+                }
+
+                const icon = themeSwitcher.querySelector('i');
+                if (theme === 'light') {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                    themeSwitcher.title = 'Cambiar a Tema Oscuro';
+                } else {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                    themeSwitcher.title = 'Cambiar a Tema Claro';
+                }
+            }
+
+
+            const initialTheme = localStorage.getItem('theme') || 'dark';
+            setTheme(initialTheme);
+
+            themeSwitcher.addEventListener('click', () => {
+                const currentTheme = localStorage.getItem('theme') || 'dark';
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+        }
+
+        function setupModeSwitcherLogin() {
+            const modeSwitcher = document.getElementById('login-mode-switcher');
+            if (!modeSwitcher) return;
+
+            const icon = modeSwitcher.querySelector('i');
+
+
+            let currentMode = localStorage.getItem('app_mode') || 'desktop';
+
+            function setModeUI(mode) {
+
+                currentMode = mode;
+                localStorage.setItem('app_mode', mode);
+
+                if (mode === 'browser') {
+
+                    icon.classList.remove('fa-window-maximize');
+                    icon.classList.add('fa-desktop');
+                    modeSwitcher.title = 'Cambiar a modo Escritorio';
+                } else {
+
+                    icon.classList.remove('fa-desktop');
+                    icon.classList.add('fa-window-maximize');
+                    modeSwitcher.title = 'Cambiar a modo Navegador';
+                }
+            }
+
+
+            setModeUI(currentMode);
+
+
+            eel.get_app_mode()().then(serverMode => {
+                console.log("Modo recibido del servidor:", serverMode);
+                if (serverMode) {
+                    setModeUI(serverMode);
+                }
+            }).catch(err => {
+                console.error("Error al obtener modo del servidor:", err);
+            });
+
+
+            modeSwitcher.addEventListener('click', async () => {
+
+                const newMode = currentMode === 'desktop' ? 'browser' : 'desktop';
+
+
+                document.body.innerHTML = `
+                    <div class="fixed inset-0 bg-gray-900 text-white flex flex-col justify-center items-center z-50">
+                        <i class="fas fa-spinner fa-spin fa-3x mb-4"></i>
+                        <p class="text-xl font-semibold">Cambiando a modo ${newMode === 'browser' ? 'Navegador' : 'Escritorio'}...</p>
+                        <p class="text-sm text-gray-400 mt-2">La aplicación se reiniciará.</p>
+                    </div>
+                `;
+
+                try {
+
+                    await eel.set_app_mode_and_restart(newMode)();
+                } catch (e) {
+                    console.error("Error al cambiar de modo:", e);
+                    alert("Error al intentar reiniciar la aplicación. Por favor reinicie manualmente.");
+                    location.reload();
+                }
+            });
+        }
+
+        function timeout(ms) {
+            return new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms));
+        }
+
+        setInterval(async () => {
+            try {
+                await Promise.race([
+                    eel.ping()(),
+                    timeout(2000)
+                ]);
+            } catch (error) {
+                window.close();
+            }
+        }, 5000);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupThemeSwitcherLogin();
+            setupModeSwitcherLogin();
+            const toggleButton = document.getElementById('togglePassword');
+            if (toggleButton) {
+                toggleButton.addEventListener('click', togglePasswordVisibility);
+            }
+
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+
+            const handleEnterKey = (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    performLogin();
+                }
+            };
+
+            usernameInput.addEventListener('keypress', handleEnterKey);
+            passwordInput.addEventListener('keypress', handleEnterKey);
+
+            const fpsCounter = document.getElementById('fps-counter');
+            if (fpsCounter) {
+
+                fpsCounter.style.display = 'none';
+
+                let fpsActive = false;
+                let fpsAnimationFrameId;
+                const times = [];
+
+                function updateFpsDisplay() {
+                    if (!fpsActive) return;
+
+                    const now = performance.now();
+                    while (times.length > 0 && times[0] <= now - 1000) {
+                        times.shift();
+                    }
+                    times.push(now);
+                    const fps = times.length;
+                    fpsCounter.textContent = `FPS: ${fps}`;
+                    fpsAnimationFrameId = requestAnimationFrame(updateFpsDisplay);
+                }
+
+                function toggleFpsCounter() {
+                    fpsActive = !fpsActive;
+                    if (fpsActive) {
+                        fpsCounter.style.display = 'block';
+                        times.length = 0;
+                        updateFpsDisplay();
+                    } else {
+                        fpsCounter.style.display = 'none';
+                        if (fpsAnimationFrameId) {
+                            cancelAnimationFrame(fpsAnimationFrameId);
+                        }
+                    }
+                }
+
+                let keySequence = '';
+                const secretCode = 'titojeffry';
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key.length === 1) {
+                        keySequence += e.key.toLowerCase();
+
+
+                        if (keySequence.length > secretCode.length) {
+                            keySequence = keySequence.slice(-secretCode.length);
+                        }
+
+                        if (keySequence === secretCode) {
+                            toggleFpsCounter();
+                            keySequence = '';
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

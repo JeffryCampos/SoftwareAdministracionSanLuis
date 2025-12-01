@@ -1,0 +1,16 @@
+--- Log de eliminación de barra de título ---
+Sistema Operativo: win32
+Iniciando búsqueda de la ventana de la aplicación...
+Intentando encontrar ventana con título 'Gestión de Estacionamiento' o 'Login - Gestión de Estacionamiento'
+Títulos de ventanas visibles: ['QA OSD', '', '', 'localhost_/login.html', 'app.py - estacionamiento-app - Visual Studio Code', 'Google Gemini - Google Chrome', 'estacionamiento-app - Explorador de archivos', 'Configuración', 'Configuración', '', '', '', '', '', '', 'Program Manager']
+Ventana no encontrada. Reintentando...
+Intentando encontrar ventana con título 'Gestión de Estacionamiento' o 'Login - Gestión de Estacionamiento'
+Títulos de ventanas visibles: ['QA OSD', '', '', 'Login - Gestión de Estacionamiento', 'app.py - estacionamiento-app - Visual Studio Code', 'Google Gemini - Google Chrome', 'estacionamiento-app - Explorador de archivos', 'Configuración', 'Configuración', '', '', '', '', '', '', 'Program Manager']
+¡Ventana encontrada! Título: 'Login - Gestión de Estacionamiento'
+Obtenido HWND de la ventana: 6881320
+Estilo original de la ventana: 382664704
+Modificando estilo para remover WS_CAPTION...
+Nuevo estilo de la ventana: 370081792
+El estilo se aplicó correctamente.
+Forzando el redibujado del marco de la ventana...
+Proceso completado.

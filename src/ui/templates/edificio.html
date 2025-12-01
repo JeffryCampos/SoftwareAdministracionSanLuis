@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Edificios</title>
+
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #3b82f6;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+
+        .list-item.active {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="flex flex-row gap-6 h-full fade-in p-6 box-border">
+
+
+        <div class="flex flex-col flex-1 gap-4 min-w-0">
+            <div class="glass-panel p-4 rounded-xl shadow-lg flex justify-between items-center flex-shrink-0">
+                <div class="flex items-center gap-2 text-lg font-semibold text-gray-100">
+                    <i class="fas fa-city text-blue-400"></i>
+                    <span>Torres</span>
+                </div>
+                <button onclick="crearTorre()"
+                    class="btn-login w-8 h-8 flex items-center justify-center rounded-lg shadow-md hover:shadow-lg transition-all p-0"
+                    title="Nueva Torre">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+
+
+            <div class="glass-panel p-3 rounded-xl shadow-lg flex-shrink-0">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="search-torres" placeholder="Buscar torre..."
+                        class="w-full pl-10 pr-4 py-2 bg-gray-700 bg-opacity-50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                        oninput="filtrarTorres(this.value)">
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-xl shadow-lg flex-grow flex flex-col overflow-hidden relative">
+                <div id="torres-list" class="overflow-y-auto flex-grow p-2 space-y-2">
+
+                </div>
+                <div id="loading-torres"
+                    class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black bg-opacity-50 backdrop-blur-sm"
+                    style="display: none;">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="flex flex-col flex-1 gap-4 min-w-0">
+            <div class="glass-panel p-4 rounded-xl shadow-lg flex justify-between items-center flex-shrink-0">
+                <div class="flex items-center gap-2 text-lg font-semibold text-gray-100">
+                    <i class="fas fa-building text-purple-400"></i>
+                    <span>Departamentos</span>
+                    <span id="selected-torre-badge"
+                        class="hidden px-2 py-0.5 rounded text-xs font-bold uppercase bg-blue-500 bg-opacity-20 text-blue-300 border border-blue-500 border-opacity-30"></span>
+                </div>
+                <button id="btn-add-depto" onclick="crearDepartamento()"
+                    class="btn-login w-8 h-8 flex items-center justify-center rounded-lg shadow-md hover:shadow-lg transition-all p-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-600"
+                    disabled title="Nuevo Departamento">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+
+
+            <div id="search-deptos-container" class="glass-panel p-3 rounded-xl shadow-lg flex-shrink-0"
+                style="display: none;">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="search-deptos" placeholder="Buscar departamento..."
+                        class="w-full pl-10 pr-4 py-2 bg-gray-700 bg-opacity-50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                        oninput="filtrarDepartamentos(this.value)">
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-xl shadow-lg flex-grow flex flex-col overflow-hidden relative">
+                <div id="deptos-placeholder"
+                    class="flex flex-col items-center justify-center h-full text-gray-400 gap-4 p-8 text-center">
+                    <i class="fas fa-arrow-left text-5xl opacity-20"></i>
+                    <p>Seleccione una torre para ver sus departamentos</p>
+                </div>
+                <div id="deptos-list" class="overflow-y-auto flex-grow p-2 space-y-2" style="display: none;">
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="flex flex-col flex-1 gap-4 min-w-0">
+            <div class="glass-panel p-4 rounded-xl shadow-lg flex justify-between items-center flex-shrink-0">
+                <div class="flex items-center gap-2 text-lg font-semibold text-gray-100">
+                    <i class="fas fa-parking text-pink-400"></i>
+                    <span>Estacionamientos</span>
+                </div>
+                <button id="btn-add-estac" onclick="crearEstacionamiento()"
+                    class="btn-login w-8 h-8 flex items-center justify-center rounded-lg shadow-md hover:shadow-lg transition-all p-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-600"
+                    disabled title="Nuevo Estacionamiento">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+
+
+            <div id="search-estac-container" class="glass-panel p-3 rounded-xl shadow-lg flex-shrink-0"
+                style="display: none;">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="search-estac" placeholder="Buscar estacionamiento..."
+                        class="w-full pl-10 pr-4 py-2 bg-gray-700 bg-opacity-50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition-all"
+                        oninput="filtrarEstacionamientos(this.value)">
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-xl shadow-lg flex-grow flex flex-col overflow-hidden relative">
+                <div id="estac-placeholder"
+                    class="flex flex-col items-center justify-center h-full text-gray-400 gap-4 p-8 text-center">
+                    <i class="fas fa-arrow-left text-5xl opacity-20"></i>
+                    <p>Seleccione una torre para ver sus estacionamientos</p>
+                </div>
+                <div id="estac-list" class="overflow-y-auto flex-grow p-2 space-y-2" style="display: none;">
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div id="loading-overlay"
+        class="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 backdrop-blur-sm"
+        style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+
+    <script src="edificio_logic.js"></script>
+</body>
+
+</html>

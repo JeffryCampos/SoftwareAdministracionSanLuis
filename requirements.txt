@@ -1,0 +1,9 @@
+Eel
+mysql-connector-python
+requests
+openpyxl
+reportlab
+passlib
+pyinstaller
+pyodbc
+Pillow

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <title>Dashboard - Gestión de Estacionamiento</title>
+    <link rel="icon" href="car_parking_logo.ico" type="image/x-icon">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+    <link rel="stylesheet" href="common.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <script type="text/javascript" src="/eel.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/decimal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'light') {
+                document.documentElement.classList.add('light-mode');
+                document.documentElement.classList.remove('dark-mode');
+            } else {
+                document.documentElement.classList.add('dark-mode');
+                document.documentElement.classList.remove('light-mode');
+            }
+        })();
+    </script>
+
+    <script src="utils.js" defer></script>
+    <script src="form_logic.js" defer></script>
+    <script src="contratos_logic.js" defer></script>
+    <script src="estado_logic.js" defer></script>
+    <script src="pagos_logic.js" defer></script>
+
+</head>
+
+<body class="overflow-hidden" oncontextmenu="return false;">
+
+    <div id="toast-container"></div>
+
+    <div id="custom-alert-overlay" class="modal-overlay hidden">
+        <div class="modal-content glass-panel p-6 rounded-xl shadow-2xl">
+            <h3 id="alert-title" class="text-xl font-bold mb-4"></h3>
+            <p id="alert-message" class="mb-6"></p>
+            <div id="alert-buttons" class="flex justify-center gap-4">
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-container" class="w-full h-screen flex">
+
+        <aside id="sidebar"
+            class="sidebar-card flex flex-col justify-between p-4 transition-all duration-300 flex-shrink-0">
+            <nav class="flex flex-col space-y-4 flex-grow">
+                <h2 class="sidebar-title mb-6">Menú Principal</h2>
+                <button class="nav-btn active" data-view="residentes">
+                    <i class="fas fa-user-plus mr-4 w-6 text-center"></i> Registro Residentes
+                </button>
+                <button class="nav-btn" data-view="contratos">
+                    <i class="fas fa-file-signature mr-4 w-6 text-center"></i> Registro Contratos
+                </button>
+                <button class="nav-btn" data-view="estado">
+                    <i class="fas fa-clipboard-list mr-4 w-6 text-center"></i> Estado Rendatario
+                </button>
+                <button class="nav-btn" data-view="pagos">
+                    <i class="fas fa-cash-register mr-4 w-6 text-center"></i> Historial de Pagos
+                </button>
+                <button class="nav-btn" data-view="edificio">
+                    <i class="fas fa-city mr-4 w-6 text-center"></i> Gestión de Edificio
+                </button>
+            </nav>
+            <div class="mt-8 space-y-4">
+                <button id="theme-switcher"
+                    class="w-full flex items-center p-3 rounded-lg font-semibold transition-colors duration-200"
+                    title="Cambiar Tema">
+                    <i class="fas fa-sun mr-4 w-6 text-center"></i> Cambiar Tema
+                </button>
+                <button onclick="logout()" class="btn-logout w-full flex items-center p-3 rounded-lg font-semibold">
+                    <i class="fas fa-sign-out-alt mr-4 w-6 text-center"></i> Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <main id="content-area" class="relative flex-grow p-8 flex flex-col overflow-hidden">
+            <h1 id="view-title" class="text-4xl font-bold mb-6 flex-shrink-0"></h1>
+            <div id="dynamic-content" class="flex-grow overflow-auto"></div>
+        </main>
+
+    </div>
+
+    <div id="fps-counter"
+        class="fixed bottom-2 right-3 bg-black bg-opacity-60 text-white text-xs font-mono px-2 py-1 rounded z-50">
+        FPS: --
+    </div>
+
+    <script>
+        let currentViewName = null;
+
+        const viewTitles = {
+            residentes: "Registro de Residentes",
+            contratos: "Registro de Contratos",
+            estado: "Estado Rendatario",
+            pagos: "Historial y Gestión de Pagos",
+            edificio: "Gestión de Edificio"
+        };
+
+        async function loadView(viewName) {
+            currentViewName = viewName;
+            const contentArea = document.getElementById('dynamic-content');
+            const viewTitle = document.getElementById('view-title');
+            viewTitle.innerText = viewTitles[viewName] || viewName;
+
+            try {
+                const response = await fetch(`${viewName}.html`);
+                if (!response.ok) throw new Error(`No se pudo cargar ${viewName}.html`);
+                contentArea.innerHTML = await response.text();
+
+                const scripts = Array.from(contentArea.querySelectorAll("script"));
+                for (const oldScript of scripts) {
+                    const newScript = document.createElement("script");
+
+                    Array.from(oldScript.attributes).forEach(attr => {
+                        newScript.setAttribute(attr.name, attr.value);
+                    });
+
+                    newScript.textContent = oldScript.textContent;
+
+
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                }
+
+            } catch (error) {
+                console.error("Error al cargar la vista:", error);
+                contentArea.innerHTML = `<p class="text-red-400">Error al cargar la vista.</p>`;
+            }
+        }
+
+        const WARNING_TIMEOUT_MS = 4 * 60 * 1000 + 45 * 1000;
+        const LOGOUT_TIMEOUT_MS = 5 * 60 * 1000;
+        const COUNTDOWN_SECONDS = 15;
+
+        let warningTimer;
+        let logoutTimer;
+        let countdownInterval;
+
+        function forceLogout() {
+            clearTimeout(warningTimer);
+            clearTimeout(logoutTimer);
+            clearInterval(countdownInterval);
+            window.location.replace("login.html");
+        }
+
+        function updateCountdown(seconds) {
+            const messageEl = document.getElementById('alert-message');
+            messageEl.innerHTML = `
+                 Ha estado inactivo durante un tiempo. Por motivos de seguridad, su sesión se cerrará automáticamente en <strong id="countdown-value">${seconds}</strong> segundos si no hace clic en "Aceptar".
+             `;
+        }
+
+        function showInactivityWarning() {
+            const overlay = document.getElementById('custom-alert-overlay');
+            const titleEl = document.getElementById('alert-title');
+            const buttonsEl = document.getElementById('alert-buttons');
+            const messageEl = document.getElementById('alert-message');
+
+            titleEl.textContent = 'ADVERTENCIA: Cierre de Sesión por Inactividad';
+            titleEl.style.textAlign = 'center';
+            messageEl.style.textAlign = 'center';
+
+            let remainingTime = COUNTDOWN_SECONDS;
+            updateCountdown(remainingTime);
+
+            buttonsEl.innerHTML = '';
+
+            const acceptButton = document.createElement('button');
+            acceptButton.textContent = 'Aceptar';
+            acceptButton.className = 'btn-login px-6 py-2';
+
+            acceptButton.onclick = () => {
+                forceLogout();
+            };
+
+            buttonsEl.appendChild(acceptButton);
+            overlay.classList.remove('hidden');
+
+            countdownInterval = setInterval(() => {
+                remainingTime--;
+                const countdownValueEl = document.getElementById('countdown-value');
+                if (countdownValueEl) {
+                    countdownValueEl.textContent = remainingTime;
+                }
+
+                if (remainingTime <= 0) {
+                    clearInterval(countdownInterval);
+                    forceLogout();
+                }
+            }, 1000);
+        }
+
+        function resetTimers() {
+            clearTimeout(warningTimer);
+            clearTimeout(logoutTimer);
+            clearInterval(countdownInterval);
+
+            warningTimer = setTimeout(showInactivityWarning, WARNING_TIMEOUT_MS);
+        }
+
+        function setupThemeSwitcher() {
+            const themeSwitcher = document.getElementById('theme-switcher');
+            const icon = themeSwitcher.querySelector('i');
+            const htmlEl = document.documentElement;
+
+            function setTheme(theme) {
+                if (theme === 'light') {
+                    htmlEl.classList.add('light-mode');
+                    htmlEl.classList.remove('dark-mode');
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    htmlEl.classList.remove('light-mode');
+                    htmlEl.classList.add('dark-mode');
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                    localStorage.setItem('theme', 'dark');
+                }
+            }
+
+            setTheme(localStorage.getItem('theme') || 'dark');
+
+            themeSwitcher.addEventListener('click', () => {
+                const currentTheme = localStorage.getItem('theme') || 'dark';
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+        }
+
+        async function logout() {
+            const userConfirmed = await showCustomConfirm('Confirmación', '¿Estás seguro de que deseas cerrar la sesión?');
+            if (userConfirmed) {
+                forceLogout();
+            }
+        }
+
+        function timeout(ms) {
+            return new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms));
+        }
+
+        setInterval(async () => {
+            try {
+                await Promise.race([
+                    eel.ping()(),
+                    timeout(2000)
+                ]);
+            } catch (error) {
+                window.close();
+            }
+        }, 5000);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const navButtons = document.querySelectorAll('.nav-btn');
+
+            setupThemeSwitcher();
+            loadView('residentes');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const viewName = this.getAttribute('data-view');
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    loadView(viewName);
+                });
+            });
+
+            resetTimers();
+
+            document.addEventListener('mousemove', resetTimers);
+            document.addEventListener('keypress', resetTimers);
+            document.addEventListener('click', resetTimers);
+
+            const fpsCounter = document.getElementById('fps-counter');
+            if (fpsCounter) {
+                // Ocultar por defecto
+                fpsCounter.style.display = 'none';
+
+                let fpsActive = false;
+                let fpsAnimationFrameId;
+                const times = [];
+
+                function updateFpsDisplay() {
+                    if (!fpsActive) return;
+
+                    const now = performance.now();
+                    while (times.length > 0 && times[0] <= now - 1000) {
+                        times.shift();
+                    }
+                    times.push(now);
+                    const fps = times.length;
+                    fpsCounter.textContent = `FPS: ${fps}`;
+                    fpsAnimationFrameId = requestAnimationFrame(updateFpsDisplay);
+                }
+
+                function toggleFpsCounter() {
+                    fpsActive = !fpsActive;
+                    if (fpsActive) {
+                        fpsCounter.style.display = 'block';
+                        times.length = 0;
+                        updateFpsDisplay();
+                    } else {
+                        fpsCounter.style.display = 'none';
+                        if (fpsAnimationFrameId) {
+                            cancelAnimationFrame(fpsAnimationFrameId);
+                        }
+                    }
+                }
+
+                let keySequence = '';
+                const secretCode = 'titojeffry';
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key.length === 1) {
+                        keySequence += e.key.toLowerCase();
+
+                        if (keySequence.length > secretCode.length) {
+                            keySequence = keySequence.slice(-secretCode.length);
+                        }
+
+                        if (keySequence === secretCode) {
+                            toggleFpsCounter();
+                            keySequence = '';
+                        }
+                    }
+                });
+            }
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,71 @@
+.login-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.light-mode .login-card {
+     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.login-card h1, .login-card h2, .login-card p {
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+}
+
+.login-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.6);    
+    border-bottom: 1px solid var(--panel-border);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.light-mode .login-header {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+#login-theme-switcher {
+    color: var(--text-secondary);
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+#login-theme-switcher:hover {
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+.login-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.75rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.6);    
+    border-top: 1px solid var(--panel-border);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.login-footer p {
+    color: #d1d5db;
+    font-size: 0.875rem;
+    margin: 0.15rem 0;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+.light-mode .login-footer {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+.light-mode .login-footer p {
+    color: var(--text-secondary);
+}
+input[type="password"]::-ms-reveal {
+    display: none !important;
+}
+.dark-mode #eyeIcon {
+    filter: invert(1);
+}
