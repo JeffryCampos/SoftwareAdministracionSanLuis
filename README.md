@@ -1,8 +1,17 @@
 =============================================================================
-BASE DE DATOS - GESTIÓN DE ESTACIONAMIENTO
+INSTALACIÓN Y CONFIGURACIÓN - GESTIÓN DE ESTACIONAMIENTO
 =============================================================================
 
-UBICACIÓN DE LOS ARCHIVOS SQL
+1. INSTALACIÓN DE DEPENDENCIAS
+-----------------------------------------------------------------------------
+El proyecto incluye un archivo "requirements.txt" con todas las librerías 
+necesarias para su funcionamiento.
+
+Para instalarlas, ejecute el siguiente comando en su terminal:
+
+   pip install -r requirements.txt
+
+2. UBICACIÓN DE LOS ARCHIVOS SQL (BASE DE DATOS)
 -----------------------------------------------------------------------------
 Todos los archivos necesarios para la importación de la base de datos, 
 incluyendo los volcados de datos (dumps) y el SQL de la base de datos 
@@ -11,9 +20,9 @@ entera, se encuentran ubicados en la carpeta:
    /database
 
 Utilice los scripts contenidos en esta carpeta para crear y poblar la 
-estructura inicial en su servidor MySQL antes de iniciar la aplicación.
+estructura inicial en su servidor MySQL.
 
-CONFIGURACIÓN PARA PRUEBAS (CONEXIÓN)
+3. CONFIGURACIÓN DE CONEXIÓN (IMPORTANTE PARA PRUEBAS)
 -----------------------------------------------------------------------------
 Para ejecutar el software en un entorno local, debe configurar la conexión 
 a su instancia de MySQL.
